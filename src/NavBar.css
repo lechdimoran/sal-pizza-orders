@@ -1,0 +1,31 @@
+.navbar{
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--sal-navy);
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.navLink{
+  text-decoration: none;
+  color: var(--sal-white);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: background-color 120ms ease, color 120ms ease;
+  font-weight: 500;
+  border: 2px solid transparent;
+}
+
+.navLink:hover{
+  background: var(--sal-gold);
+  color: var(--sal-navy);
+}
+
+.navLink.active{
+  background: var(--sal-accent);
+  color: var(--sal-white);
+  border-color: var(--sal-gold);
+}

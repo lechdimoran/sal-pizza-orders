@@ -1,0 +1,25 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #F8F9FA;
+  color: #333;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* SAL Color Variables */
+:root {
+  --sal-navy: #003366;
+  --sal-accent: #2C3E50; /* Dark charcoal instead of red for better accessibility */
+  --sal-gold: #FFD700;
+  --sal-white: #FFFFFF;
+  --sal-light-bg: #F8F9FA;
+  --sal-dark-text: #333;
+}

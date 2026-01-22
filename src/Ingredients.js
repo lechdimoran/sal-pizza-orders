@@ -1,12 +1,39 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useApi, useApiMutation } from "./useApi";
 import { apiGet } from "./apiService";
 import "./Ingredients.css";
+import ToastContainer from "./ToastContainer";
+
+// Helpers to map varying API field names to our UI model
+const getProp = (obj, keys) => {
+    for (const k of keys) {
+        if (obj && Object.prototype.hasOwnProperty.call(obj, k) && obj[k] !== null && obj[k] !== undefined) {
+            return obj[k];
+        }
+    }
+    return undefined;
+};
+
+const normalizeIngredient = (item) => {
+    const ingredientid = getProp(item, ["ingredientid", "IngredientId", "IngredientID", "ingredientId", "id"]);
+    return {
+        ingredientid: ingredientid,
+        description: getProp(item, ["description", "Description", "desc", "name"]) || "",
+        packsize: Number(getProp(item, ["packsize", "PackSize", "packSize"])) || 0,
+        packtype: getProp(item, ["packtype", "PackType", "packType", "unit", "Unit"]) || "",
+        smallserving: Number(getProp(item, ["smallserving", "SmallServing", "smallServing"])) || 0,
+        largeserving: Number(getProp(item, ["largeserving", "LargeServing", "largeServing"])) || 0,
+        kingkoldprice: Number(getProp(item, ["kingkoldprice", "KingKoldPrice", "price", "Price"])) || 0,
+        piquapizzasupply: Number(getProp(item, ["piquapizzasupply", "PiquaPizzaSupply", "supplyCost"])) || 0,
+        topping: Boolean(getProp(item, ["topping", "Topping", "isTopping"])) || false,
+        appetizer: Boolean(getProp(item, ["appetizer", "Appetizer", "isAppetizer"])) || false,
+    };
+};
 
 function Ingredients() {
     const { data: ingredients, loading, error, refetch } = useApi('/ingredients');
     const { mutate: updateIngredient, loading: updating } = useApiMutation('POST');
-    
+    const [toasts, setToasts] = useState([]);
     const [selectedIngredient, setSelectedIngredient] = useState(null);
     const [editing, setEditing] = useState(false);
     const [formData, setFormData] = useState({
@@ -22,35 +49,59 @@ function Ingredients() {
         inAppetizer: false
     });
 
-    // Handle row selection
+    const addToast = (message, type = 'info') => {
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, { id, message, type }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, 4000);
+    };
+
+    const dismissToast = (id) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    };
+
+    useEffect(() => {
+        if (error) {
+            addToast(`Error: ${error}`, 'error');
+        }
+    }, [error]);
+
+    const rawRows = useMemo(() => {
+        if (!ingredients) return [];
+        if (Array.isArray(ingredients)) return ingredients;
+        if (Array.isArray(ingredients?.data)) return ingredients.data;
+        if (Array.isArray(ingredients?.items)) return ingredients.items;
+        return [];
+    }, [ingredients]);
+
+    const rows = useMemo(() => rawRows.map(normalizeIngredient), [rawRows]);
+
     const handleRowClick = async (ingredient) => {
         try {
-            // Fetch detailed ingredient data
             const detailedIngredient = await apiGet(`/ingredient`, { 
                 IngredientID: ingredient.ingredientid 
             });
-            
-            setSelectedIngredient(detailedIngredient);
+            const normalizedDetail = normalizeIngredient(detailedIngredient);
+            setSelectedIngredient(normalizedDetail);
             setFormData({
-                IngredientId: detailedIngredient.ingredientid || ingredient.ingredientid,
-                inDescription: detailedIngredient.description || '',
-                inPackSize: detailedIngredient.packsize || '',
-                inPackType: detailedIngredient.packtype || '',
-                inSmallServing: detailedIngredient.smallserving || '',
-                inLargeServing: detailedIngredient.largeserving || '',
-                inKingKoldPrice: detailedIngredient.kingkoldprice || '',
-                inPiquaPizzaSupply: detailedIngredient.piquapizzasupply || '',
-                inTopping: detailedIngredient.topping || false,
-                inAppetizer: detailedIngredient.appetizer || false
+                IngredientId: normalizedDetail.ingredientid || ingredient.ingredientid,
+                inDescription: normalizedDetail.description || '',
+                inPackSize: normalizedDetail.packsize || '',
+                inPackType: normalizedDetail.packtype || '',
+                inSmallServing: normalizedDetail.smallserving || '',
+                inLargeServing: normalizedDetail.largeserving || '',
+                inKingKoldPrice: normalizedDetail.kingkoldprice || '',
+                inPiquaPizzaSupply: normalizedDetail.piquapizzasupply || '',
+                inTopping: normalizedDetail.topping || false,
+                inAppetizer: normalizedDetail.appetizer || false
             });
             setEditing(true);
         } catch (err) {
-            console.error('Failed to fetch ingredient details:', err);
-            alert('Failed to load ingredient details');
+            addToast('Failed to load ingredient details', 'error');
         }
     };
 
-    // Handle form input changes
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
@@ -59,7 +110,6 @@ function Ingredients() {
         }));
     };
 
-    // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -75,18 +125,15 @@ function Ingredients() {
                 inTopping: formData.inTopping,
                 inAppetizer: formData.inAppetizer
             });
-            
-            alert('Ingredient updated successfully!');
+            addToast('Ingredient updated successfully!', 'success');
             setEditing(false);
             setSelectedIngredient(null);
-            refetch(); // Refresh the ingredients list
+            refetch();
         } catch (err) {
-            console.error('Failed to update ingredient:', err);
-            alert('Failed to update ingredient: ' + err.message);
+            addToast('Failed to update ingredient: ' + err.message, 'error');
         }
     };
 
-    // Handle cancel
     const handleCancel = () => {
         setEditing(false);
         setSelectedIngredient(null);
@@ -97,10 +144,13 @@ function Ingredients() {
 
     return (
         <div className="page ingredients">
+            <ToastContainer toasts={toasts} onClose={dismissToast} />
             <h2>Ingredients</h2>
-            
             {!editing ? (
                 <div className="ingredients-table-container">
+                    {rows.length === 0 && (
+                        <div style={{ padding: '1rem', color: '#666' }}>No ingredients to display.</div>
+                    )}
                     <table className="ingredients-table">
                         <thead>
                             <tr>
@@ -117,22 +167,22 @@ function Ingredients() {
                             </tr>
                         </thead>
                         <tbody>
-                            {ingredients && ingredients.map((ingredient) => (
+                            {rows && rows.map((ingredient, idx) => (
                                 <tr 
-                                    key={ingredient.ingredientid} 
+                                    key={ingredient.ingredientid ?? idx} 
                                     onClick={() => handleRowClick(ingredient)}
                                     style={{ cursor: 'pointer' }}
                                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
                                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
                                 >
-                                    <td>{ingredient.ingredientid}</td>
-                                    <td>{ingredient.description}</td>
-                                    <td>{ingredient.packsize}</td>
-                                    <td>{ingredient.packtype}</td>
-                                    <td>{ingredient.smallserving}</td>
-                                    <td>{ingredient.largeserving}</td>
-                                    <td>${ingredient.kingkoldprice}</td>
-                                    <td>${ingredient.piquapizzasupply}</td>
+                                    <td>{ingredient.ingredientid ?? '-'}</td>
+                                    <td>{ingredient.description ?? '-'}</td>
+                                    <td>{ingredient.packsize ?? '-'}</td>
+                                    <td>{ingredient.packtype ?? '-'}</td>
+                                    <td>{ingredient.smallserving ?? '-'}</td>
+                                    <td>{ingredient.largeserving ?? '-'}</td>
+                                    <td>{ingredient.kingkoldprice !== undefined ? `$${ingredient.kingkoldprice}` : '-'}</td>
+                                    <td>{ingredient.piquapizzasupply !== undefined ? `$${ingredient.piquapizzasupply}` : '-'}</td>
                                     <td>{ingredient.topping ? '✓' : ''}</td>
                                     <td>{ingredient.appetizer ? '✓' : ''}</td>
                                 </tr>
@@ -149,7 +199,6 @@ function Ingredients() {
                             <label>Ingredient ID:</label>
                             <input type="text" value={formData.IngredientId} disabled />
                         </div>
-                        
                         <div className="form-group">
                             <label>Description:</label>
                             <input 

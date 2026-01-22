@@ -29,6 +29,34 @@ Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
+### API Configuration
+
+This app connects to a web API that uses JWT (JSON Web Tokens) for authentication.
+
+**Environment Variables:**
+- `REACT_APP_API_BASE_URL`: Your API base URL
+- `REACT_APP_API_KEY`: (Optional) API key for non-authenticated endpoints
+
+**Authentication Flow:**
+1. User logs in with username/password
+2. API returns a JWT token
+3. Token is stored locally and sent with all subsequent requests
+4. Token is included in `Authorization: Bearer <token>` header
+
+**Security Note:** JWT tokens are stored in localStorage. For enhanced security, consider implementing token refresh logic and secure token storage.
+
+### Authentication
+
+This app includes user authentication to secure access:
+
+- **Login Page**: Users must log in with valid credentials to access the application
+- **Protected Routes**: All application routes are protected and require authentication
+- **Session Management**: User sessions are maintained in localStorage
+- **Automatic Logout**: Users can log out manually via the header
+
+**Backend Requirements**: The authentication system expects your API to have:
+- `POST /auth/login` endpoint that accepts `{ username, password }` and returns `{ user, token }`
+
 ### `npm run eject`
 
 **Note: this is a one-way operation. Once you `eject`, you can't go back!**

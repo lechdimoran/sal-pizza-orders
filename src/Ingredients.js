@@ -56,9 +56,32 @@ const getProp = (obj, keys) => {
 };
 
 const normalizeIngredient = (item) => {
-    // First, check if this is a tuple-string format (fn_GetIngredients key)
+    // If item is an array, take the first element
+    if (Array.isArray(item) && item.length > 0) {
+        item = item[0];
+    }
+    
+    // Check for tuple-string format from list endpoint (fn_GetIngredients)
     if (item && item.fn_GetIngredients) {
         const parsed = parseTupleString(item.fn_GetIngredients);
+        if (parsed) return parsed;
+    }
+    
+    // Check for tuple-string format from single ingredient endpoint (fn_GetIngredientById)
+    if (item && item.fn_GetIngredientById) {
+        const parsed = parseTupleString(item.fn_GetIngredientById);
+        if (parsed) return parsed;
+    }
+    
+    // Check for tuple-string format from single ingredient endpoint (fn_GetIngredient - singular)
+    if (item && item.fn_GetIngredient) {
+        const parsed = parseTupleString(item.fn_GetIngredient);
+        if (parsed) return parsed;
+    }
+    
+    // If item is a plain string (just the tuple), parse it directly
+    if (typeof item === 'string') {
+        const parsed = parseTupleString(item);
         if (parsed) return parsed;
     }
     
@@ -128,9 +151,23 @@ function Ingredients() {
     const handleRowClick = async (ingredient) => {
         try {
             const detailedIngredient = await apiGet(`/ingredient/${ingredient.ingredientid}`);
+            console.log('Raw API response:', detailedIngredient);
             const normalizedDetail = normalizeIngredient(detailedIngredient);
+            console.log('Normalized detail:', normalizedDetail);
             setSelectedIngredient(normalizedDetail);
             setFormData({
+                IngredientId: normalizedDetail.ingredientid || ingredient.ingredientid,
+                inDescription: normalizedDetail.description || '',
+                inPackSize: normalizedDetail.packsize || '',
+                inPackType: normalizedDetail.packtype || '',
+                inSmallServing: normalizedDetail.smallserving || '',
+                inLargeServing: normalizedDetail.largeserving || '',
+                inKingKoldPrice: normalizedDetail.kingkoldprice || '',
+                inPiquaPizzaSupply: normalizedDetail.piquapizzasupply || '',
+                inTopping: normalizedDetail.topping || false,
+                inAppetizer: normalizedDetail.appetizer || false
+            });
+            console.log('Form data set to:', {
                 IngredientId: normalizedDetail.ingredientid || ingredient.ingredientid,
                 inDescription: normalizedDetail.description || '',
                 inPackSize: normalizedDetail.packsize || '',
@@ -145,6 +182,7 @@ function Ingredients() {
             setEditing(true);
         } catch (err) {
             addToast('Failed to load ingredient details', 'error');
+            console.error('Error loading ingredient:', err);
         }
     };
 

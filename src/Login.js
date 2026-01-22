@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import './Login.css';
 
@@ -7,7 +8,15 @@ function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,9 +27,11 @@ function Login() {
 
     if (!result.success) {
       setError(result.error);
+      setLoading(false);
+    } else {
+      // Successful login - navigate to home page
+      navigate('/');
     }
-
-    setLoading(false);
   };
 
   return (

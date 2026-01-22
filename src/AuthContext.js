@@ -66,6 +66,7 @@ export const AuthProvider = ({ children }) => {
 
       // Check content type before parsing
       const contentType = response.headers.get('content-type');
+      
       if (!response.ok) {
         // Try to get error message from response if it's JSON
         if (contentType && contentType.includes('application/json')) {
@@ -82,9 +83,14 @@ export const AuthProvider = ({ children }) => {
 
       const data = await response.json();
 
+      // Check if the response has the expected structure
+      if (!data.token) {
+        throw new Error('Invalid response from server - missing token');
+      }
+
       // Store user and token
-      setUser(data.user);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user || { username });
+      localStorage.setItem('user', JSON.stringify(data.user || { username }));
       localStorage.setItem('token', data.token);
 
       return { success: true };

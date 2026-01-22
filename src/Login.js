@@ -37,7 +37,7 @@ function Login() {
   return (
     <div className="login-container">
       <div className="login-form">
-        <h2>Login to Pizza Orders</h2>
+        <h2>Login to SAL 707 Orders</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="username">Username:</label>

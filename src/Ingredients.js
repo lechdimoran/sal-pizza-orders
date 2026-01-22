@@ -4,6 +4,47 @@ import { apiGet } from "./apiService";
 import "./Ingredients.css";
 import ToastContainer from "./ToastContainer";
 
+// Helper to parse tuple string format: (id,desc,packSize,packType,smallServ,largeServ,kingPrice,piquaPrice,topping)
+const parseTupleString = (tupleStr) => {
+    if (!tupleStr || typeof tupleStr !== 'string') return null;
+    
+    // Remove outer parentheses
+    const inner = tupleStr.trim().slice(1, -1);
+    
+    // Parse CSV-like format with quoted strings support
+    const parts = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < inner.length; i++) {
+        const char = inner[i];
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            parts.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    if (current) parts.push(current.trim());
+    
+    if (parts.length < 9) return null;
+    
+    return {
+        ingredientid: parseInt(parts[0]),
+        description: parts[1].replace(/^"|"$/g, ''), // Remove quotes
+        packsize: parseInt(parts[2]),
+        packtype: parts[3],
+        smallserving: parseFloat(parts[4]),
+        largeserving: parseFloat(parts[5]),
+        kingkoldprice: parseFloat(parts[6].replace('$', '').replace(',', '')),
+        piquapizzasupply: parseFloat(parts[7].replace('$', '').replace(',', '')),
+        topping: parts[8].toLowerCase() === 't',
+        appetizer: false
+    };
+};
+
 // Helpers to map varying API field names to our UI model
 const getProp = (obj, keys) => {
     for (const k of keys) {
@@ -15,6 +56,13 @@ const getProp = (obj, keys) => {
 };
 
 const normalizeIngredient = (item) => {
+    // First, check if this is a tuple-string format (fn_GetIngredients key)
+    if (item && item.fn_GetIngredients) {
+        const parsed = parseTupleString(item.fn_GetIngredients);
+        if (parsed) return parsed;
+    }
+    
+    // Fall back to property-based format
     const ingredientid = getProp(item, ["ingredientid", "IngredientId", "IngredientID", "ingredientId", "id"]);
     return {
         ingredientid: ingredientid,
@@ -79,9 +127,7 @@ function Ingredients() {
 
     const handleRowClick = async (ingredient) => {
         try {
-            const detailedIngredient = await apiGet(`/ingredient`, { 
-                IngredientID: ingredient.ingredientid 
-            });
+            const detailedIngredient = await apiGet(`/ingredient/${ingredient.ingredientid}`);
             const normalizedDetail = normalizeIngredient(detailedIngredient);
             setSelectedIngredient(normalizedDetail);
             setFormData({

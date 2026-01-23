@@ -1,10 +1,9 @@
 import React from "react";
 import { Routes, Route, NavLink } from 'react-router-dom';
-import PizzaOrders from "./PizzaOrders";
 import Ingredients from "./Ingredients";
 import PizzaSales from "./PizzaSales";
 import Appetizers from "./Appetizers";
-import AppetizerEntry from "./AppetizerEntry";
+import AppetizerEntry from "./AppetizerSales";
 import './NavBar.css';
 
 function NavBar(){
@@ -12,18 +11,16 @@ function NavBar(){
     return (
         <div>
             <nav className="navbar">
-                <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/Ingredients">Ingredients</NavLink>
-                <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/PizzaOrders">Pizza Orders</NavLink>
+                <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/Ingredients">Ingredients</NavLink>                
                 <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/PizzaSales">Pizza Sales Entry</NavLink>
                 <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/Appetizers">Appetizer Orders</NavLink>
-                <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/AppetizerEntry">Appetizer Order Entry</NavLink>
+                <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/AppetizerSales">Appetizer Order Entry</NavLink>
             </nav>
             <Routes>
-                <Route path="/Ingredients" element={<Ingredients />} />
-                <Route path="/PizzaOrders" element={<PizzaOrders />} />
+                <Route path="/Ingredients" element={<Ingredients />} />                
                 <Route path="/PizzaSales" element={<PizzaSales />} />
                 <Route path="/Appetizers" element={<Appetizers />} />
-                <Route path="/AppetizerEntry" element={<AppetizerEntry />} />
+                <Route path="/AppetizerSales" element={<AppetizerEntry />} />
             </Routes>
         </div>
     );

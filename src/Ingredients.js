@@ -104,9 +104,11 @@ const normalizeIngredient = (item) => {
 function Ingredients() {
     const { data: ingredients, loading, error, refetch } = useApi('/ingredients');
     const { mutate: updateIngredient, loading: updating } = useApiMutation('POST');
+    const { mutate: insertIngredient, loading: inserting } = useApiMutation('POST');
     const [toasts, setToasts] = useState([]);
     const [selectedIngredient, setSelectedIngredient] = useState(null);
     const [editing, setEditing] = useState(false);
+    const [isInserting, setIsInserting] = useState(false);
     const [formData, setFormData] = useState({
         IngredientId: '',
         inDescription: '',
@@ -148,6 +150,23 @@ function Ingredients() {
 
     const rows = useMemo(() => rawRows.map(normalizeIngredient), [rawRows]);
 
+    const handleAddNew = () => {
+        setIsInserting(true);
+        setFormData({
+            IngredientId: '',
+            inDescription: '',
+            inPackSize: '',
+            inPackType: '',
+            inSmallServing: '',
+            inLargeServing: '',
+            inKingKoldPrice: '',
+            inPiquaPizzaSupply: '',
+            inTopping: false,
+            inAppetizer: false
+        });
+        setEditing(true);
+    };
+
     const handleRowClick = async (ingredient) => {
         try {
             const detailedIngredient = await apiGet(`/ingredient/${ingredient.ingredientid}`);
@@ -179,6 +198,7 @@ function Ingredients() {
                 inTopping: normalizedDetail.topping || false,
                 inAppetizer: normalizedDetail.appetizer || false
             });
+            setIsInserting(false);
             setEditing(true);
         } catch (err) {
             addToast('Failed to load ingredient details', 'error');
@@ -197,8 +217,7 @@ function Ingredients() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await updateIngredient('/updateingredient', {
-                IngredientId: parseInt(formData.IngredientId),
+            const payload = {
                 inDescription: formData.inDescription,
                 inPackSize: parseInt(formData.inPackSize),
                 inPackType: formData.inPackType,
@@ -208,18 +227,31 @@ function Ingredients() {
                 inPiquaPizzaSupply: parseFloat(formData.inPiquaPizzaSupply),
                 inTopping: formData.inTopping,
                 inAppetizer: formData.inAppetizer
-            });
-            addToast('Ingredient updated successfully!', 'success');
+            };
+
+            if (isInserting) {
+                await insertIngredient('/insertingredient', payload);
+                addToast('Ingredient added successfully!', 'success');
+            } else {
+                await updateIngredient('/updateingredient', {
+                    IngredientId: parseInt(formData.IngredientId),
+                    ...payload
+                });
+                addToast('Ingredient updated successfully!', 'success');
+            }
+            
             setEditing(false);
+            setIsInserting(false);
             setSelectedIngredient(null);
             refetch();
         } catch (err) {
-            addToast('Failed to update ingredient: ' + err.message, 'error');
+            addToast(`Failed to ${isInserting ? 'add' : 'update'} ingredient: ` + err.message, 'error');
         }
     };
 
     const handleCancel = () => {
         setEditing(false);
+        setIsInserting(false);
         setSelectedIngredient(null);
     };
 
@@ -229,7 +261,17 @@ function Ingredients() {
     return (
         <div className="page ingredients">
             <ToastContainer toasts={toasts} onClose={dismissToast} />
-            <h2>Ingredients</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h2 style={{ margin: 0 }}>Ingredients</h2>
+                {!editing && (
+                    <button 
+                        onClick={handleAddNew}
+                        style={{ padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem' }}
+                    >
+                        Add New Ingredient
+                    </button>
+                )}
+            </div>
             {!editing ? (
                 <div className="ingredients-table-container">
                     {rows.length === 0 && (
@@ -277,12 +319,14 @@ function Ingredients() {
                 </div>
             ) : (
                 <div className="ingredient-form">
-                    <h3>Edit Ingredient</h3>
+                    <h3>{isInserting ? 'Add New Ingredient' : 'Edit Ingredient'}</h3>
                     <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label>Ingredient ID:</label>
-                            <input type="text" value={formData.IngredientId} disabled />
-                        </div>
+                        {!isInserting && (
+                            <div className="form-group">
+                                <label>Ingredient ID:</label>
+                                <input type="text" value={formData.IngredientId} disabled />
+                            </div>
+                        )}
                         <div className="form-group">
                             <label>Description:</label>
                             <input 
@@ -389,8 +433,8 @@ function Ingredients() {
                         </div>
 
                         <div className="form-actions">
-                            <button type="submit" disabled={updating}>
-                                {updating ? 'Updating...' : 'Update Ingredient'}
+                            <button type="submit" disabled={updating || inserting}>
+                                {updating || inserting ? (isInserting ? 'Adding...' : 'Updating...') : (isInserting ? 'Add Ingredient' : 'Update Ingredient')}
                             </button>
                             <button type="button" onClick={handleCancel}>
                                 Cancel

@@ -95,6 +95,12 @@ function PizzaSales() {
     
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (!selectedSize) {
+            alert('Please select a pizza size');
+            return;
+        }
+        
         const selectedToppingIds = Object.keys(selectedToppings)
             .filter(id => selectedToppings[id])
             .map(Number);

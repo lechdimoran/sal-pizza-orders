@@ -4,7 +4,19 @@ import { apiGet } from "./apiService";
 import "./Ingredients.css";
 import ToastContainer from "./ToastContainer";
 
-// Helper to parse tuple string format: (id,desc,packSize,packType,smallServ,largeServ,kingPrice,piquaPrice,topping)
+// Bool coercion helper that understands t/true/1/y/yes and numeric 1
+const toBool = (val) => {
+    if (val === undefined || val === null) return false;
+    if (typeof val === 'boolean') return val;
+    if (typeof val === 'number') return val === 1;
+    if (typeof val === 'string') {
+        const s = val.trim().toLowerCase();
+        return ['t', 'true', '1', 'y', 'yes'].includes(s);
+    }
+    return false;
+};
+
+// Helper to parse tuple string format: (id,desc,packSize,packType,smallServ,largeServ,kingPrice,piquaPrice,topping[,appetizer])
 const parseTupleString = (tupleStr) => {
     if (!tupleStr || typeof tupleStr !== 'string') return null;
     
@@ -40,8 +52,8 @@ const parseTupleString = (tupleStr) => {
         largeserving: parseFloat(parts[5]),
         kingkoldprice: parseFloat(parts[6].replace('$', '').replace(',', '')),
         piquapizzasupply: parseFloat(parts[7].replace('$', '').replace(',', '')),
-        topping: parts[8].toLowerCase() === 't',
-        appetizer: false
+        topping: toBool(parts[8]),
+        appetizer: parts.length >= 10 ? toBool(parts[9]) : false
     };
 };
 
@@ -96,8 +108,8 @@ const normalizeIngredient = (item) => {
         largeserving: Number(getProp(item, ["largeserving", "LargeServing", "largeServing"])) || 0,
         kingkoldprice: Number(getProp(item, ["kingkoldprice", "KingKoldPrice", "price", "Price"])) || 0,
         piquapizzasupply: Number(getProp(item, ["piquapizzasupply", "PiquaPizzaSupply", "supplyCost"])) || 0,
-        topping: Boolean(getProp(item, ["topping", "Topping", "isTopping"])) || false,
-        appetizer: Boolean(getProp(item, ["appetizer", "Appetizer", "isAppetizer"])) || false,
+        topping: toBool(getProp(item, ["topping", "Topping", "isTopping", "IsTopping", "toppingflag", "ToppingFlag"])),
+        appetizer: toBool(getProp(item, ["appetizer", "Appetizer", "isAppetizer", "IsAppetizer", "appetizerflag", "AppetizerFlag"]))
     };
 };
 
@@ -173,30 +185,31 @@ function Ingredients() {
             console.log('Raw API response:', detailedIngredient);
             const normalizedDetail = normalizeIngredient(detailedIngredient);
             console.log('Normalized detail:', normalizedDetail);
+            console.log('Row appetizer values:', { listValue: ingredient.appetizer, detailValue: normalizedDetail.appetizer });
             setSelectedIngredient(normalizedDetail);
             setFormData({
                 IngredientId: normalizedDetail.ingredientid || ingredient.ingredientid,
                 inDescription: normalizedDetail.description || '',
-                inPackSize: normalizedDetail.packsize || '',
+                inPackSize: normalizedDetail.packsize ?? ingredient.packsize ?? 0,
                 inPackType: normalizedDetail.packtype || '',
-                inSmallServing: normalizedDetail.smallserving || '',
-                inLargeServing: normalizedDetail.largeserving || '',
-                inKingKoldPrice: normalizedDetail.kingkoldprice || '',
-                inPiquaPizzaSupply: normalizedDetail.piquapizzasupply || '',
-                inTopping: normalizedDetail.topping || false,
-                inAppetizer: normalizedDetail.appetizer || false
+                inSmallServing: normalizedDetail.smallserving ?? ingredient.smallserving ?? 0,
+                inLargeServing: normalizedDetail.largeserving ?? ingredient.largeserving ?? 0,
+                inKingKoldPrice: normalizedDetail.kingkoldprice ?? ingredient.kingkoldprice ?? 0,
+                inPiquaPizzaSupply: normalizedDetail.piquapizzasupply ?? ingredient.piquapizzasupply ?? 0,
+                inTopping: normalizedDetail.topping ?? ingredient.topping ?? false,
+                inAppetizer: normalizedDetail.appetizer ?? ingredient.appetizer ?? false
             });
             console.log('Form data set to:', {
                 IngredientId: normalizedDetail.ingredientid || ingredient.ingredientid,
                 inDescription: normalizedDetail.description || '',
-                inPackSize: normalizedDetail.packsize || '',
+                inPackSize: normalizedDetail.packsize ?? ingredient.packsize ?? 0,
                 inPackType: normalizedDetail.packtype || '',
-                inSmallServing: normalizedDetail.smallserving || '',
-                inLargeServing: normalizedDetail.largeserving || '',
-                inKingKoldPrice: normalizedDetail.kingkoldprice || '',
-                inPiquaPizzaSupply: normalizedDetail.piquapizzasupply || '',
-                inTopping: normalizedDetail.topping || false,
-                inAppetizer: normalizedDetail.appetizer || false
+                inSmallServing: normalizedDetail.smallserving ?? ingredient.smallserving ?? 0,
+                inLargeServing: normalizedDetail.largeserving ?? ingredient.largeserving ?? 0,
+                inKingKoldPrice: normalizedDetail.kingkoldprice ?? ingredient.kingkoldprice ?? 0,
+                inPiquaPizzaSupply: normalizedDetail.piquapizzasupply ?? ingredient.piquapizzasupply ?? 0,
+                inTopping: normalizedDetail.topping ?? ingredient.topping ?? false,
+                inAppetizer: normalizedDetail.appetizer ?? ingredient.appetizer ?? false
             });
             setIsInserting(false);
             setEditing(true);
@@ -216,18 +229,38 @@ function Ingredients() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Validate required fields (check for empty strings, not falsy values)
+        if (formData.inDescription === '' || formData.inPackSize === '' || formData.inPackType === '') {
+            addToast('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        console.log('Form data before conversion:', formData);
+        
+        // Convert to proper numeric types
+        const packSize = parseInt(formData.inPackSize);
+        const smallServing = parseFloat(formData.inSmallServing) || 0;
+        const largeServing = parseFloat(formData.inLargeServing) || 0;
+        const kingPrice = parseFloat(formData.inKingKoldPrice) || 0;
+        const piquaPrice = parseFloat(formData.inPiquaPizzaSupply) || 0;
+        
+        console.log('After conversion:', { packSize, smallServing, largeServing, kingPrice, piquaPrice });
+        
         try {
             const payload = {
                 inDescription: formData.inDescription,
-                inPackSize: parseInt(formData.inPackSize),
+                inPackSize: packSize,
                 inPackType: formData.inPackType,
-                inSmallServing: parseFloat(formData.inSmallServing),
-                inLargeServing: parseFloat(formData.inLargeServing),
-                inKingKoldPrice: parseFloat(formData.inKingKoldPrice),
-                inPiquaPizzaSupply: parseFloat(formData.inPiquaPizzaSupply),
+                inSmallServing: smallServing,
+                inLargeServing: largeServing,
+                inKingKoldPrice: kingPrice,
+                inPiquaPizzaSupply: piquaPrice,
                 inTopping: formData.inTopping,
                 inAppetizer: formData.inAppetizer
             };
+
+            console.log(`${isInserting ? 'Inserting' : 'Updating'} ingredient with payload:`, payload);
 
             if (isInserting) {
                 await insertIngredient('/insertingredient', payload);

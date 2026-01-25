@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useApi, useApiMutation } from "./useApi";
+import ToastContainer from "./ToastContainer";
 
 // Helper to parse tuple string format for sizes and toppings
 const parseTupleString = (tupleStr) => {
@@ -60,6 +61,7 @@ function PizzaSales() {
     const { data: toppingsData, loading: toppingsLoading, error: toppingsError } = useApi('/toppings');
     const { mutate: insertPizzaOrder, loading: submitting } = useApiMutation('POST');
     
+    const [toasts, setToasts] = useState([]);
     const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
     const [selectedSize, setSelectedSize] = useState(null);
     const [selectedToppings, setSelectedToppings] = useState({});
@@ -93,11 +95,23 @@ function PizzaSales() {
         }));
     };
     
+    const addToast = (message, type = 'info') => {
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, { id, message, type }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, 4000);
+    };
+    
+    const dismissToast = (id) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    };
+    
     const handleSubmit = async (e) => {
         e.preventDefault();
         
         if (!selectedSize) {
-            alert('Please select a pizza size');
+            addToast('Please select a pizza size', 'error');
             return;
         }
         
@@ -113,17 +127,20 @@ function PizzaSales() {
                 orderdate: orderDate
             });
             console.log('Pizza order submitted successfully');
+            addToast('Pizza order submitted successfully!', 'success');
             // Reset form
             setOrderDate(new Date().toISOString().split('T')[0]);
             setSelectedSize(null);
             setSelectedToppings({});
         } catch (err) {
             console.error('Error submitting pizza order:', err);
+            addToast('Failed to submit order: ' + err.message, 'error');
         }
     };
     
     return (
         <div className="page pizza-sales">
+            <ToastContainer toasts={toasts} onClose={dismissToast} />
             <h2>Pizza Sales Entry</h2>
             
             {sizesError && <div style={{ color: 'red', marginBottom: '1rem' }}>Error loading sizes: {sizesError}</div>}

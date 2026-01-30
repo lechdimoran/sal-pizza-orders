@@ -87,10 +87,15 @@ export const AuthProvider = ({ children }) => {
       if (!data.token) {
         throw new Error('Invalid response from server - missing token');
       }
-
+      console.log('Login response data:', data);     
       // Store user and token
-      setUser(data.user || { username });
-      localStorage.setItem('user', JSON.stringify(data.user || { username }));
+      const userData = {
+        username: data?.username || username,
+        role: data?.userrole || 'user',
+      };
+
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify({userData}));
       localStorage.setItem('token', data.token);
 
       return { success: true };

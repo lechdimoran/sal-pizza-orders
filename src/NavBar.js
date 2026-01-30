@@ -4,6 +4,7 @@ import Ingredients from "./Ingredients";
 import PizzaSales from "./PizzaSales";
 import Appetizers from "./Appetizers";
 import AppetizerEntry from "./AppetizerSales";
+import Reports from "./Reports";
 import './NavBar.css';
 
 function NavBar(){
@@ -15,12 +16,14 @@ function NavBar(){
                 <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/PizzaSales">Pizza Sales Entry</NavLink>
                 <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/Appetizers">Appetizer Orders</NavLink>
                 <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/AppetizerSales">Appetizer Sales Entry</NavLink>
+                <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/Reports">Reports</NavLink>
             </nav>
             <Routes>
                 <Route path="/Ingredients" element={<Ingredients />} />                
                 <Route path="/PizzaSales" element={<PizzaSales />} />
                 <Route path="/Appetizers" element={<Appetizers />} />
                 <Route path="/AppetizerSales" element={<AppetizerEntry />} />
+                <Route path="/Reports" element={<Reports />} />
             </Routes>
         </div>
     );

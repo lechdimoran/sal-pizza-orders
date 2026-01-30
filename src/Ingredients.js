@@ -3,6 +3,8 @@ import { useApi, useApiMutation } from "./useApi";
 import { apiGet } from "./apiService";
 import "./Ingredients.css";
 import ToastContainer from "./ToastContainer";
+import { useAuth } from "./AuthContext";
+
 
 // Bool coercion helper that understands t/true/1/y/yes and numeric 1
 const toBool = (val) => {
@@ -114,6 +116,8 @@ const normalizeIngredient = (item) => {
 };
 
 function Ingredients() {
+    const {user} = useAuth();
+    console.log('user role is: ', user.role)
     const { data: ingredients, loading, error, refetch } = useApi('/ingredients');
     const { mutate: updateIngredient, loading: updating } = useApiMutation('POST');
     const { mutate: insertIngredient, loading: inserting } = useApiMutation('POST');
@@ -466,7 +470,7 @@ function Ingredients() {
                         </div>
 
                         <div className="form-actions">
-                            <button type="submit" disabled={updating || inserting}>
+                            <button type="submit" disabled={updating || inserting || user.role !== 'Admin'}>
                                 {updating || inserting ? (isInserting ? 'Adding...' : 'Updating...') : (isInserting ? 'Add Ingredient' : 'Update Ingredient')}
                             </button>
                             <button type="button" onClick={handleCancel}>

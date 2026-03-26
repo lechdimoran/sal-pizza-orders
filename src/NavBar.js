@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, NavLink } from 'react-router-dom';
 import Ingredients from "./Ingredients";
 import PizzaSales from "./PizzaSales";
+import PizzaOrderList from "./PizzaOrderList";
 import Appetizers from "./Appetizers";
 import AppetizerEntry from "./AppetizerSales";
 import Reports from "./Reports";
@@ -14,6 +15,7 @@ function NavBar(){
             <nav className="navbar">
                 <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/Ingredients">Ingredients</NavLink>                
                 <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/PizzaSales">Pizza Sales Entry</NavLink>
+                <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/PizzaOrderList">Pizza Orders</NavLink>
                 <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/Appetizers">Appetizer Orders</NavLink>
                 <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/AppetizerSales">Appetizer Sales Entry</NavLink>
                 <NavLink className={({isActive}) => isActive ? 'navLink active' : 'navLink'} to="/Reports">Reports</NavLink>
@@ -21,6 +23,7 @@ function NavBar(){
             <Routes>
                 <Route path="/Ingredients" element={<Ingredients />} />                
                 <Route path="/PizzaSales" element={<PizzaSales />} />
+                <Route path="/PizzaOrderList" element={<PizzaOrderList />} />
                 <Route path="/Appetizers" element={<Appetizers />} />
                 <Route path="/AppetizerSales" element={<AppetizerEntry />} />
                 <Route path="/Reports" element={<Reports />} />
